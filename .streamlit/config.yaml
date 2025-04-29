@@ -1,0 +1,14 @@
+credentials:
+  names:
+    - "Administrador"
+    - "Usuário1"
+  usernames:
+    - "admin"
+    - "user1"
+  passwords:
+    - "senha_admin"
+    - "senha_user1"
+cookie:
+  expiry_days: 30
+  key: "random_key"
+  name: "streamlit_authenticator"
