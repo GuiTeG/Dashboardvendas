@@ -2,20 +2,20 @@ FROM python:3.11.8-slim
 
 WORKDIR /app
 
-# Instalar dependências do sistema para o psycopg2
-RUN apt-get update && apt-get upgrade -y && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+# Instalar dependências do sistema para psycopg2 (gcc e libpq-dev)
+RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
 
-# Copiar o arquivo de dependências
+# Copiar requirements.txt
 COPY requirements.txt /app/
 
 # Instalar dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar todo o restante da aplicação para dentro do contêiner
+# Copiar todo o restante do código
 COPY . /app/
 
-# Expor a porta padrão do Streamlit
+# Expor porta padrão do Streamlit
 EXPOSE 8501
 
-# Comando para rodar o app Streamlit
-CMD ["streamlit", "run", "Teste.py", "--server.address=0.0.0.0"]
+# Rodar app Streamlit com endereço 0.0.0.0 e modo headless na porta 8501
+CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]

@@ -1,0 +1,33 @@
+{
+    "Guilherme doce": {
+        "nome": "Guilherme doce",
+        "senha": "$2b$12$MSvYA7THSl94hwjqRCq7keyXEAJTrlZ3wEcZP6HJFtZRBsr6ychRe",
+        "papel": "admin",
+        "lojas": [
+            1,
+            3,
+            1115,
+            1122
+        ]
+    },
+    "Vitor Hugo": {
+        "nome": "Vitor ",
+        "senha": "$2b$12$KP6qAbUIlsuoF2EzCCzLwOZSIvM09V3Ymbq/r9yI4p15CIA/mSj2S",
+        "papel": "viewer",
+        "lojas": [
+            1,
+            3,
+            1115,
+            1122
+        ]
+    },
+    "Rafael": {
+        "nome": "Rafale Sales",
+        "senha": "$2b$12$FHgXhyXnEyPVKTxSwohB0OVgMUScsFFfnheA4v5X5XRk6q.OaA3Sa",
+        "papel": "viewer",
+        "lojas": [
+            1115,
+            1122
+        ]
+    }
+}

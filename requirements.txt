@@ -4,4 +4,6 @@ pandas
 sqlalchemy
 psycopg2-binary
 streamlit_autorefresh
+bcrypt
+
 
