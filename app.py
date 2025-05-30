@@ -2,11 +2,12 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 from sqlalchemy import text
+import time
+from streamlit_autorefresh import st_autorefresh
 
 from Login.autenticar import login, cadastrar_usuario, carregar_usuarios, excluir_usuario, alterar_cadastro
 from menu import menu_inicial
 from conexoes import conectar_virtual_gate, conectar_faturamento, conectar_producao
-
 from Lojas.santo_andre import mostrar_santo_andre
 from Lojas.maua import mostrar_maua
 from Lojas.televendas import mostrar_televendas
@@ -22,8 +23,11 @@ from Lojas.vendedores_santo_andre import mostrar_vendedores_santo_andre
 from Lojas.ecommerce_canais import mostrar_ecommerce_canais
 from Unificado.painel_unificado_resumido import painel_unificado_resumido
 from Lojas.vendas_assistidas import mostrar_vendas_assistida
+from Produtos_fornecedores.fornecedores import aba_produtos
 
 st.set_page_config(page_title="Copafer Inside", layout="wide")
+
+st_autorefresh(interval=120000, key="auto_refresh")
 
 pagina = st.session_state.get("pagina", "menu").lower().replace("-", "_")
 logado = st.session_state.get("logado", False)
@@ -34,6 +38,7 @@ unidades = {
     "televendas": ("TELEVENDAS", "#4CAF50", "#FFFFFF", "5rem", "-9vh"),
     "ecommerce": ("E-COMMERCE", "#6C63FF", "#FFFFFF", "5rem", "-9vh"),
     "painel_unificado_resumido": ("PRINCIPAIS", "#003366", "#FFFFFF", "5rem", "-9vh"),
+    "produtos": ("PRODUTOS", "#008080", "#FFFFFF", "5rem", "-9vh")
 }
 
 mapa_unidades_sidebar = {
@@ -41,7 +46,7 @@ mapa_unidades_sidebar = {
     "vendedores_santo_andre": "santo_andre",
     "vendas_assistidas_santo_andre": "santo_andre",
     "maua": "maua",
-    "venda_assistida_maua": "maua",   # Atenção aqui: chave exata da página (sem 's' no final)
+    "venda_assistida_maua": "maua",
     "vendedores_maua": "maua",
     "televendas": "televendas",
     "vendedores_televendas": "televendas",
@@ -49,8 +54,8 @@ mapa_unidades_sidebar = {
     "ecommerce_canais": "ecommerce",
     "vendedores_ecommerce": "ecommerce",
     "painel_unificado_resumido": "painel_unificado_resumido",
+    "produtos": "produtos",
 }
-
 
 if not logado or pagina == "menu":
     cor_sidebar = "#FFD600"
@@ -113,28 +118,10 @@ if not st.session_state["logado"]:
         })
         st.rerun()
 else:
-    loja_map = {
-        "santo_andre": 1,
-        "vendedores_santo_andre": 1,
-        "vendas_assistidas_santo_andre": 1,
-        "maua": 3,
-        "vendedores_maua": 3,
-        "televendas": 1115,
-        "vendedores_televendas": 1115,
-        "ecommerce": 1122,
-        "ecommerce_canais": 1122,
-        "vendedores_ecommerce": 1122,
-        "painel_unificado_resumido": "TODAS"
-    }
-
-    usuario_lojas = st.session_state.get("lojas_autorizadas", [])
-    usuario_papel = st.session_state.get("papel", "viewer")
-
-    if pagina in loja_map and usuario_papel != "admin":
-        loja_alvo = loja_map[pagina]
-        if loja_alvo != "TODAS" and loja_alvo not in usuario_lojas:
-            st.error("🚫 Você não tem permissão para acessar esta unidade.")
-            st.stop()
+    paginas_autorizadas = st.session_state.get("lojas_autorizadas", [])
+    if st.session_state.get("papel") != "admin" and pagina not in paginas_autorizadas:
+        st.error("🚫 Você não tem permissão para acessar esta página.")
+        st.stop()
 
     if pagina == "menu":
         with st.container():
@@ -144,8 +131,8 @@ else:
             with col2:
                 with st.expander("⚙️ Conta", expanded=False):
                     if st.button("➕ Cadastrar Usuário", key="btn_cadastrar_usuario"):
-                            st.session_state["menu_config"] = "cadastrar"
-                            st.rerun()
+                        st.session_state["menu_config"] = "cadastrar"
+                        st.rerun()
                     if st.button("✏️ Alterar Cadastro", key="btn_alterar_cadastro"):
                         st.session_state["menu_config"] = "editar"
                         st.rerun()
@@ -174,38 +161,22 @@ else:
     conn_faturamento = conectar_faturamento()
     conn_producao = conectar_producao()
 
-    if pagina == "menu":
-        menu_inicial()
-    elif pagina == "painel_unificado_resumido":
-        painel_unificado_resumido(conn_faturamento, conn_fluxo)
-    elif pagina == "santo_andre":
-        mostrar_santo_andre(conn_faturamento, conn_fluxo)
-    elif pagina == "vendas_assistidas_santo_andre":
-        mostrar_vendas_assistida(conn_faturamento, conn_fluxo)
-    elif pagina == "maua":
-        mostrar_maua(conn_faturamento, conn_fluxo)
-    elif pagina == "televendas":
-        mostrar_televendas(conn_faturamento)
-    elif pagina == "vendedores_televendas":
-        mostrar_vendedores_televendas(conn_faturamento)
-    elif pagina == "ecommerce":
-        mostrar_ecommerce(conn_faturamento, conn_fluxo)
-    elif pagina == "ecommerce_canais":
-        mostrar_ecommerce_canais(conn_faturamento)
-    elif pagina == "comparativo_santo_andre":
-        comparativo_santo_andre(conn_faturamento, conn_fluxo)
-    elif pagina == "comparativo_maua":
-        comparativo_maua(conn_faturamento, conn_fluxo)
-    elif pagina == "comparativo_televendas":
-        comparativo_televendas(conn_faturamento)
-    elif pagina == "comparativo_ecommerce":
-        comparativo_ecommerce(conn_faturamento)
-    elif pagina == "vendedores_santo_andre":
-        mostrar_vendedores_santo_andre(conn_faturamento)
-    elif pagina == "vendedores_maua":
-        mostrar_vendedores_maua(conn_faturamento)
-    elif pagina == "venda_assistida_maua":
-        mostrar_venda_assistida_maua(conn_faturamento, conn_fluxo)
-
-    else:
-        st.error("Página não encontrada.")
+    match pagina:
+        case "menu": menu_inicial()
+        case "painel_unificado_resumido": painel_unificado_resumido(conn_faturamento, conn_fluxo)
+        case "santo_andre": mostrar_santo_andre(conn_faturamento, conn_fluxo)
+        case "vendas_assistidas_santo_andre": mostrar_vendas_assistida(conn_faturamento, conn_fluxo)
+        case "maua": mostrar_maua(conn_faturamento, conn_fluxo)
+        case "televendas": mostrar_televendas(conn_faturamento)
+        case "vendedores_televendas": mostrar_vendedores_televendas(conn_faturamento)
+        case "ecommerce": mostrar_ecommerce(conn_faturamento, conn_fluxo)
+        case "ecommerce_canais": mostrar_ecommerce_canais(conn_faturamento)
+        case "comparativo_santo_andre": comparativo_santo_andre(conn_faturamento, conn_fluxo)
+        case "comparativo_maua": comparativo_maua(conn_faturamento, conn_fluxo)
+        case "comparativo_televendas": comparativo_televendas(conn_faturamento)
+        case "comparativo_ecommerce": comparativo_ecommerce(conn_faturamento)
+        case "vendedores_santo_andre": mostrar_vendedores_santo_andre(conn_faturamento)
+        case "vendedores_maua": mostrar_vendedores_maua(conn_faturamento)
+        case "venda_assistida_maua": mostrar_venda_assistida_maua(conn_faturamento, conn_fluxo)
+        case "produtos": aba_produtos(conn_faturamento)
+        case _: st.error("Página não encontrada.")

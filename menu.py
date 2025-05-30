@@ -39,6 +39,12 @@ def menu_inicial():
                 st.session_state.pagina = "ecommerce"
                 st.rerun()
 
+        # Botão novo para Produtos
+        if papel == "admin":
+            if st.button("📦 Produtos", key="btn_painel_produtos"):
+                st.session_state.pagina = "produtos"
+                st.rerun()
+
     with col2:
         if papel == "admin" or 1 in lojas_autorizadas:
             if st.button("📊 Comparativo Santo André", key="btn_comp_santo_andre"):
@@ -58,3 +64,4 @@ def menu_inicial():
                 st.rerun()
 
     st.markdown("---")
+

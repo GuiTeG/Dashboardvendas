@@ -42,12 +42,12 @@ def login(usuarios):
         if user_data and bcrypt.checkpw(senha.encode('utf-8'), user_data['senha'].encode('utf-8')):
             nome_real = user_data.get("nome", usuario)
             papel = user_data.get("papel", "viewer")
-            lojas_autorizadas = list(map(int, user_data.get("lojas", [])))
+            abas_autorizadas = user_data.get("lojas", [])
             st.session_state.update({
                 "usuario_logado": usuario,
                 "nome_usuario": nome_real,
                 "papel": papel,
-                "lojas_autorizadas": lojas_autorizadas,
+                "lojas_autorizadas": abas_autorizadas,
                 "logado": True
             })
             st.success(f"Bem-vindo, {nome_real}!")
@@ -77,54 +77,45 @@ def cadastrar_usuario(usuarios):
 
     papel = st.selectbox("Tipo de usuário", ["viewer", "admin"])
 
-    # Lista fixa de lojas
-    lista_lojas = [
-        {"id": 1, "nome": "Santo André"},
-        {"id": 3, "nome": "Máua"},
-        {"id": 1115, "nome": "Televendas"},
-        {"id": 1122, "nome": "E-commmerce"},
-    ]
+    abas_disponiveis = [
+    {"id": "painel_unificado_resumido", "nome": "Painel Resumido"},
+    {"id": "santo_andre", "nome": "Santo André"},
+    {"id": "maua", "nome": "Mauá"},
+    {"id": "televendas", "nome": "Televendas"},
+    {"id": "ecommerce", "nome": "E-commerce"},
+    {"id": "produtos", "nome": "Produtos"},
+    {"id": "comparativo_santo_andre", "nome": "Comparativo Santo André"},
+    {"id": "comparativo_maua", "nome": "Comparativo Mauá"},
+    {"id": "comparativo_televendas", "nome": "Comparativo Televendas"},
+    {"id": "comparativo_ecommerce", "nome": "Comparativo E-commerce"},
+]
 
-    lojas_disponiveis = [f"{loja['id']} - {loja['nome']}" for loja in lista_lojas]
+# Mapeia {id: nome} para exibição e seleção
+    abas_opcoes = {aba["id"]: aba["nome"] for aba in abas_disponiveis}
 
-    if st.session_state["lojas_input"]:
-        selecionadas_default = []
-        for loja_id_str in st.session_state["lojas_input"].split(","):
-            loja_id_str = loja_id_str.strip()
-            for op in lojas_disponiveis:
-                if op.startswith(loja_id_str + " "):
-                    selecionadas_default.append(op)
-                    break
-    else:
-        selecionadas_default = []
+    abas_selecionadas = st.multiselect(
+    "Selecione as abas autorizadas",
+    options=list(abas_opcoes.keys()),
+    format_func=lambda x: abas_opcoes[x],
+)
 
-    lojas_selecionadas = st.multiselect(
-        "Selecione as lojas autorizadas",
-        options=lojas_disponiveis,
-        default=selecionadas_default,
-    )
+   
 
     if st.button("Cadastrar"):
-        if not novo_usuario or not novo_nome or not nova_senha or not lojas_selecionadas:
-            st.warning("Preencha todos os campos, incluindo pelo menos uma loja.")
+        if not novo_usuario or not novo_nome or not nova_senha or not abas_selecionadas:
+            st.warning("Preencha todos os campos, incluindo pelo menos uma aba.")
         elif nova_senha != confirmar_senha:
             st.error("As senhas não coincidem.")
         elif novo_usuario in usuarios:
             st.error("Usuário já existe.")
         else:
-            lojas_ids = []
-            for item in lojas_selecionadas:
-                loja_id = item.split(" - ")[0]
-                try:
-                    lojas_ids.append(int(loja_id))
-                except:
-                    pass
+            abas_ids = [item.split(" - ")[0] for item in abas_selecionadas]
 
             usuarios[novo_usuario] = {
                 "nome": novo_nome,
                 "senha": criar_hash_senha(nova_senha),
                 "papel": papel,
-                "lojas": lojas_ids,
+                "lojas": abas_ids,
             }
 
             salvar_usuarios(usuarios)
@@ -142,8 +133,6 @@ def cadastrar_usuario(usuarios):
                 st.session_state[campo] = ""
             st.session_state["menu_config"] = ""
             st.rerun()
-
-
 
 
 def excluir_usuario(usuarios):
@@ -181,8 +170,9 @@ def excluir_usuario(usuarios):
             except Exception as e:
                 st.error(f"Erro ao excluir usuário: {e}")
 
+
 def alterar_cadastro(usuarios):
-    st.markdown("<h2>🛠️ Alterar Cadastro</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>💠 Alterar Cadastro</h2>", unsafe_allow_html=True)
 
     usuario_atual = st.session_state.get("usuario_logado")
     papel = st.session_state.get("papel")
@@ -196,7 +186,7 @@ def alterar_cadastro(usuarios):
 
     if papel == "admin":
         novo_login = st.text_input("Login (nome de usuário)", value=usuario_atual)
-        lojas_input = st.text_input("Lojas autorizadas (separadas por vírgula)", value=",".join(map(str, dados.get("lojas", []))))
+        lojas_input = st.text_input("Abas autorizadas (separadas por vírgula)", value=",".join(dados.get("lojas", [])))
     else:
         novo_login = usuario_atual
         lojas_input = None
@@ -208,7 +198,7 @@ def alterar_cadastro(usuarios):
     nova_senha = st.text_input("Nova senha", type="password")
     confirmar_nova_senha = st.text_input("Confirmar nova senha", type="password")
 
-    if st.button("💾 Salvar alterações"):
+    if st.button("📏 Salvar alterações"):
         if not novo_nome:
             st.warning("O nome não pode ficar em branco.")
             return
@@ -228,11 +218,7 @@ def alterar_cadastro(usuarios):
             senha_hash = dados["senha"]
 
         if papel == "admin":
-            try:
-                lojas = [int(loja.strip()) for loja in lojas_input.split(",") if loja.strip()]
-            except ValueError:
-                st.error("As lojas devem ser números separados por vírgula.")
-                return
+            abas = [aba.strip() for aba in lojas_input.split(",") if aba.strip()]
 
             if novo_login != usuario_atual:
                 usuarios.pop(usuario_atual)
@@ -240,7 +226,7 @@ def alterar_cadastro(usuarios):
                 "nome": novo_nome,
                 "senha": senha_hash,
                 "papel": papel,
-                "lojas": lojas
+                "lojas": abas
             }
         else:
             usuarios[usuario_atual]["nome"] = novo_nome
@@ -255,14 +241,6 @@ def alterar_cadastro(usuarios):
                 UPDATE usuariosinside SET nome = %s, senha = %s, usuario = %s
                 WHERE usuario = %s
             """, (novo_nome, senha_hash, novo_login, usuario_atual))
-
-            if papel == "admin":
-                cur.execute("SELECT id FROM usuariosinside WHERE usuario = %s", (novo_login,))
-                usuario_id = cur.fetchone()[0]
-                cur.execute("DELETE FROM usuario_lojasinside WHERE usuario_id = %s", (usuario_id,))
-                for loja in lojas:
-                    cur.execute("INSERT INTO usuario_lojasinside (usuario_id, loja_id) VALUES (%s, %s)", (usuario_id, loja))
-
             conn.commit()
             cur.close()
             conn.close()
@@ -274,7 +252,7 @@ def alterar_cadastro(usuarios):
         if novo_login != usuario_atual:
             st.session_state["usuario_logado"] = novo_login
         if papel == "admin":
-            st.session_state["lojas_autorizadas"] = lojas
+            st.session_state["lojas_autorizadas"] = abas
 
         st.success("Cadastro atualizado com sucesso.")
         st.session_state["menu_config"] = ""
